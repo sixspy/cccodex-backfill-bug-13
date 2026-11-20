@@ -92,15 +92,68 @@ async function renderCoverage(){
 
 async function render_list(){
   const j = await api('/api/halfload/panels');
-  view.innerHTML = `<div class="wall">${(j.list||[]).map(r=>`<article class="card"><h3>${r.slice_key}</h3><p>抽取${r.extract_ok} 落库${r.load_ok}</p></article>`).join('')||'<p class="muted">空</p>'}
-    <article class="card"><button id="s" type="button">挂半截样本</button>
-    <button class="primary" id="r" type="button">补交</button></article></div>`;
-  document.getElementById('s').onclick = async ()=>{ try{ await api('/api/halfload/seed',{method:'POST',body:'{}'}); setMsg('半截'); await render_list(); }catch(e){setMsg(e.message,true);} };
-  document.getElementById('r').onclick = async ()=>{ try{ const r=await api('/api/halfload/resubmit',{method:'POST',body:'{}'}); setMsg(r.note); await render_list(); }catch(e){setMsg(e.message,true);} };
+  const rows = (j.list||[]);
+  view.innerHTML = `${rows.length?`<div class="wall">${rows.map(r=>`<article class="card">
+      <h3>${r.slice_key}</h3>
+      <p><span class="tag bad">${r.chip}</span> <span class="tag ${r.status==='已收口'?'ok':''}">${r.status}</span></p>
+      <p class="muted">批次 ${r.attempt||'-'} · 抽取 ${r.extract_ok?'齐全':'缺口'} · 落库 ${r.load_ok?'已落库':'半截'}</p>
+      <p class="muted">${r.reason||''}</p>
+    </article>`).join('')}</div>`:'<p class="muted">还没有半截样本，先挂一个。</p>'}
+    <div class="card" style="margin-top:0.85rem">
+      <p class="muted">${rows.every(r=>r.status==='已收口')?'抽取与落库已同成同败。':'假齐芯片亮：抽取标记与落库行还没有同成同败。'}</p>
+      <button id="s" type="button">挂半截样本</button>
+      <button class="primary" id="r" type="button">补交</button>
+      <p class="muted" id="rout"></p>
+    </div>`;
+  document.getElementById('s').onclick = async ()=>{ try{ const r=await api('/api/halfload/seed',{method:'POST',body:'{}'}); setMsg(r.message); await render_list(); }catch(e){setMsg(e.message,true);} };
+  document.getElementById('r').onclick = async ()=>{
+    try{
+      const r = await api('/api/halfload/resubmit',{method:'POST',body:'{}'});
+      setMsg(r.message, !r.closed);
+      await render_list();
+    }catch(e){ setMsg(e.message,true); }
+  };
 }
-async function render_detail(){ const j=await api('/api/halfload/panels'); view.innerHTML=`<div class="card"><p>抽取标记 ${j.detail.extract}</p><p>落库 ${j.detail.load}</p></div>`; }
-async function render_card(){ const j=await api('/api/halfload/panels'); view.innerHTML=`<div class="card"><span class="tag">${j.card.fate}</span><p>补交键 ${j.card.resubmit_key}</p></div>`; }
-async function render_attach(){ const j=await api('/api/halfload/panels'); view.innerHTML=`<div class="card"><p>假绿 ${j.attach.fake_green}</p><p>半截残行 ${j.attach.half_rows}</p></div>`; }
+async function render_detail(){
+  const j = await api('/api/halfload/panels');
+  const d = j.detail;
+  const mark = d.attempt ? `批次 ${d.attempt}` : '缺批次';
+  view.innerHTML = `<div class="wall">
+    <article class="card">
+      <h3>${d.slice_key||'半截详情'}</h3>
+      <p>抽取标记 <span class="tag ${d.extract_ok?'ok':'bad'}">${d.extract}</span></p>
+      <p>落库 <span class="tag ${d.load_ok?'ok':'bad'}">${d.load}</span></p>
+      <p class="muted">${mark} · 同源 ${d.same_source?'是':'否（双标）'}</p>
+    </article>
+    <article class="card">
+      <h3>行数</h3>
+      <p class="muted">应有 ${d.expected_rows} · 抽取 ${d.extracted_rows} · 已落库 ${d.loaded_rows}</p>
+      <p class="muted">目标表半截残行 ${d.half_rows_in_target} · 只读归档 ${d.archived_rows}</p>
+      <p class="muted">${d.reason||''}</p>
+    </article>
+  </div>`;
+}
+async function render_card(){
+  const j = await api('/api/halfload/panels');
+  const c = j.card;
+  view.innerHTML = `<div class="card">
+    <h3><span class="tag ${c.fate==='同败已收口'?'ok':'bad'}">${c.fate}</span></h3>
+    <p>补交键 <code>${c.resubmit_key}</code></p>
+    <p class="muted">${c.message}</p>
+    <p class="muted">待收口 ${c.pending}</p>
+    <button class="primary" id="r" type="button">补交</button>
+  </div>`;
+  document.getElementById('r').onclick = async ()=>{ try{ const r=await api('/api/halfload/resubmit',{method:'POST',body:'{}'}); setMsg(r.message, !r.closed); await render_card(); }catch(e){setMsg(e.message,true);} };
+}
+async function render_attach(){
+  const j = await api('/api/halfload/panels');
+  const a = j.attach;
+  view.innerHTML = `<div class="card">
+    <p>覆盖对账 <span class="tag ${a.fake_green?'bad':(a.unclosed?'':'ok')}">${a.coverage}</span></p>
+    <p class="muted">假绿 ${a.fake_green?'是':'否'} · 目标表半截残行 ${a.half_rows} · 只读归档 ${a.archived_rows}</p>
+    <p class="muted">${a.reason}</p>
+  </div>`;
+}
 
 async function show(tab){
   setMsg(''); await loadWindows();

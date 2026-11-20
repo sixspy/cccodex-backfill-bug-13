@@ -169,9 +169,15 @@ class ApiHalfLoadSeed:
     async def on_post(self, req, resp):
         try:
             require_user(req)
-            _json(resp, halfload_svc.seed_half())
+            body = await req.get_media() or {}
+            extracted = body.get("extracted_rows")
+            if extracted is not None:
+                extracted = int(extracted)
+            _json(resp, halfload_svc.seed_half(extracted_rows=extracted))
         except ServiceError as exc:
             _json(resp, {"error": exc.message}, exc.status_code)
+        except (TypeError, ValueError):
+            _json(resp, {"error": "extracted_rows 无效"}, 400)
 
 
 class ApiHalfLoadResubmit:
