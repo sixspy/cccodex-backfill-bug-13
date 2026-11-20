@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>回灌补数台</title>
+  <link rel="stylesheet" href="/static/css/backfill.css" />
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <div>
+        <p class="brand" id="lab-name">回灌补数台</p>
+        <h1>窗口切片与覆盖对账</h1>
+      </div>
+      <button type="button" id="btn-logout">退出</button>
+    </div>
+    <div class="chips">
+      <button type="button" data-tab="list" class="on">假齐清单</button><button type="button" data-tab="detail">半截详情</button><button type="button" data-tab="card">同败卡片</button><button type="button" data-tab="attach">回灌附页</button>
+    </div>
+    <p class="muted" id="msg"></p>
+    <div id="view"></div>
+  </div>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

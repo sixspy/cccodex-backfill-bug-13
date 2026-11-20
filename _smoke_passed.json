@@ -1,0 +1,12 @@
+{
+  "label": "backfill-bug-13",
+  "port": 8170,
+  "login_url": "http://127.0.0.1:8170/login",
+  "http_status": 200,
+  "checks": [
+    "含登录相关文案",
+    "含密码表单线索"
+  ],
+  "passed": true,
+  "checked_at": "2026-11-20T13:27:35+08:00"
+}
